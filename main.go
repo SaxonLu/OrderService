@@ -49,7 +49,7 @@ var (
 
 func init() {
 	flag.BoolVar(&local, "local", true, "set window connect.")
-	flag.StringVar(&remoteIP, "remoteIP", "192.168.1.104", "set up remote mssql of ip.")
+	flag.StringVar(&remoteIP, "remoteIP", "ip", "set up remote mssql of ip.")
 	flag.StringVar(&remoteDS, "remoteDS", "MSSQLSERVER", "set up remote mssql of datasource.")
 }
 
@@ -69,17 +69,16 @@ type SA struct {
 
 func NewMssql() *Mssql {
 	mssql := new(Mssql)
-	dataS := "(localdb)\v11.0\\MSSQLSERVER"
+	dataS := "ip\\MSSQLSERVER"
 	if !local {
 		dataS = fmt.Sprintf("%s\\%s", remoteIP, remoteDS)
 	}
 
 	mssql = &Mssql{
-		// 如果数据库是默认实例（MSSQLSERVER）则直接使用IP，命名实例需要指明。
-		// dataSource: "192.168.1.104\\MSSQLSERVER",
+		// dataSource: "ip\\MSSQLSERVER",
 		dataSource: dataS,
 		database:   "Northwind",
-	    windows: false ,//为windows身份验证，false 必须设置sa账号和密码
+	    windows: false ,
 		//windows: local,
 		sa: &SA{
 			user:   "sa",
@@ -101,7 +100,6 @@ func (m *Mssql) Open() error {
 	if m.windows {
 		config = fmt.Sprintf("%s;Integrated Security=SSPI", config)
 	}else {
-		// sql 2000的端口写法和sql 2005以上的有所不同，在Data Source 后以逗号隔开。
 		config = fmt.Sprintf("%s;user id=%s;password=%s",
 			config, m.sa.user, m.sa.passwd)
 	}
