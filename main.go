@@ -5,20 +5,21 @@ import (
 	// "net/http"
 	// "github.com/gorilla/mux"
 
-	"database/sql"
-	"flag"
-	"fmt"
 	"log"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 )
 
-import (
-	_ "github.com/mattn/go-adodb"
-)
+// import (
+// 	_ "github.com/mattn/go-adodb"
+// )
 
-// type Menu struct {
-// 	Meal  string
-// 	Price int
-// }
+type Menu struct {
+	Menu_ID int `db:"Menu_ID"`
+	Menu_Name string `db:"Menu_Name"`
+	Price int `db:"Price"`
+	OnWork  string `db:"OnWork"`
+}
 
 // func MenuPage(rw http.ResponseWriter, request *http.Request) {
 
@@ -41,93 +42,6 @@ import (
 // }
 
 
-var (
-	local    bool
-	remoteIP string
-	remoteDS string
-)
-
-func init() {
-	flag.BoolVar(&local, "local", true, "set window connect.")
-	flag.StringVar(&remoteIP, "remoteIP", "ip", "set up remote mssql of ip.")
-	flag.StringVar(&remoteDS, "remoteDS", "MSSQLSERVER", "set up remote mssql of datasource.")
-}
-
-type Mssql struct {
-	*sql.DB
-	dataSource string
-	database   string
-	windows    bool
-	sa         *SA
-}
-
-type SA struct {
-	user   string
-	passwd string
-	port   int
-}
-
-func NewMssql() *Mssql {
-	mssql := new(Mssql)
-	dataS := "ip\\MSSQLSERVER"
-	if !local {
-		dataS = fmt.Sprintf("%s\\%s", remoteIP, remoteDS)
-	}
-
-	mssql = &Mssql{
-		// dataSource: "ip\\MSSQLSERVER",
-		dataSource: dataS,
-		database:   "Northwind",
-	    windows: false ,
-		//windows: local,
-		sa: &SA{
-			user:   "sa",
-			passwd: "qwer!1234",
-			port:   1433,
-		},
-	}
-
-	fmt.Println(mssql)
-
-	return mssql
-
-}
-
-func (m *Mssql) Open() error {
-	config := fmt.Sprintf("Provider=SQLOLEDB;Initial Catalog=%s;Data Source=%s",
-		m.database, m.dataSource)
-
-	if m.windows {
-		config = fmt.Sprintf("%s;Integrated Security=SSPI", config)
-	}else {
-		config = fmt.Sprintf("%s;user id=%s;password=%s",
-			config, m.sa.user, m.sa.passwd)
-	}
-
-
-	var err error
-	m.DB, err = sql.Open("adodb", config)
-	if err != nil{
-		fmt.Println(err)
-	}
-	fmt.Println(config)
-
-	return err
-}
-
-func (m *Mssql) Select() {
-	rows, err := m.Query("select GETDATE()")
-	if err != nil {
-		fmt.Printf("select query err: %s\n", err)
-	}
-
-	for rows.Next() {
-		var id, name string
-		rows.Scan(&id, &name)
-		fmt.Printf("LastName = %s, FirstName = %s\n", id, name)
-	}
-}
-
 func main() {
 
 	// r := mux.NewRouter()
@@ -135,17 +49,13 @@ func main() {
 	// r.HandleFunc("/Menu", MenuPage).Methods("GET")
 
 	// http.ListenAndServe(":3000", r)
-
-	flag.Parse()
-
-	mssql := NewMssql()
-	err := mssql.Open()
-	checkError(err)
-
-	mssql.Select()
-}
-func checkError(err error) {
-	if err != nil {
-		log.Fatal(err)
+	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil{
+		log.Fatalln(err)
 	}
+
+	Menu:=[]Menu{}
+	conn.Select(&Menu,"select * from menu")
+	log.Println("Menu...")
+	log.Println(Menu)
 }
