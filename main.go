@@ -39,19 +39,26 @@ func MenuPage(rw http.ResponseWriter, request *http.Request) {
 func AddMenu(rw http.ResponseWriter, request *http.Request) {
 	// rw.Write([]byte("Welcome ! type :3000/Menu to seen Menu"))
 
-
-	data := make(map[string]interface{})
+	// data := make(map[string]interface{})
+	data :=&Menu{}
 	decoder := json.NewDecoder(request.Body)
+
 	err := decoder.Decode(&data)
+
+	if err != nil {
+		rw.Write([]byte("Error! Invalid request payload"))
+		return
+	}
+	defer request.Body.Close()
+
+	b, err := json.Marshal(data)
+
 	if err != nil {
 		return
 	}
-	// c := request.Body
-	// b, err := json.Marshal(c)
-	// b, err := json.Marshal(decoder)
-
-
-	// rw.Write([]byte(decoder))
+	rw.Header().Set("Content-Type", "application/json;charset=UTF-8")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write(b)
 
 }
 
