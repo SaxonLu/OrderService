@@ -1,31 +1,28 @@
 package main
 
 import (
-	"fmt"
+	"OrderService/model"
 	"encoding/json"
-	"net/http"
+	"fmt"
 	"log"
+	"net/http"
+
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
 	"github.com/gorilla/mux"
+	"github.com/jmoiron/sqlx"
 )
 
-type Menu struct {
-	Menu_ID int `db:"Menu_ID"`
-	Menu_Name string `db:"Menu_Name"`
-	Price int `db:"Price"`
-	OnWork  string `db:"OnWork"`
-}
+var tx *sqlx.Tx
 
 func MenuPage(rw http.ResponseWriter, request *http.Request) {
 
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		log.Fatalln(err)
 	}
 	defer conn.Close()
-	Menu:=[]Menu{}
-	conn.Select(&Menu,"select * from menu")
+	Menu := []model.Menu{}
+	conn.Select(&Menu, "select * from menu")
 
 	b, err := json.Marshal(Menu)
 
@@ -39,11 +36,7 @@ func MenuPage(rw http.ResponseWriter, request *http.Request) {
 
 func AddMenu(rw http.ResponseWriter, request *http.Request) {
 
-	// data := make(map[string]interface{})
-
-	//defer request.Body.Close()
-
-	data :=&Menu{}
+	data := &model.Menu{}
 
 	decoder := json.NewDecoder(request.Body)
 
@@ -54,21 +47,19 @@ func AddMenu(rw http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	pk:= GetMenuNewPK()
+	pk := GetMenuNewPK()
 
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql連線失敗!"))
 	}
 
-	var tx *sqlx.Tx
-
 	tx, err = conn.Beginx()
 
-	if err != nil{
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql交易啟動失敗!"))
 	}
-	_, err = tx.Exec("INSERT INTO menu(Menu_ID, Menu_Name, Price, OnWork)values(?,?,?,?)",pk,data.Menu_Name,data.Price,data.OnWork)
+	_, err = tx.Exec("INSERT INTO menu(Menu_ID, Menu_Name, Price, OnWork)values(?,?,?,?)", pk, data.Menu_Name, data.Price, data.OnWork)
 
 	if err != nil {
 		tx.Rollback()
@@ -90,8 +81,8 @@ func AddMenu(rw http.ResponseWriter, request *http.Request) {
 
 }
 
-func EditMenu(rw http.ResponseWriter, request *http.Request){
-	data :=&Menu{}
+func EditMenu(rw http.ResponseWriter, request *http.Request) {
+	data := &model.Menu{}
 
 	decoder := json.NewDecoder(request.Body)
 
@@ -104,27 +95,25 @@ func EditMenu(rw http.ResponseWriter, request *http.Request){
 
 	check := GetSingleMenu(data.Menu_ID)
 
-	if check == false{
+	if check == false {
 		rw.Write([]byte("錯誤! 資料庫內無對應菜單!"))
 		return
 	}
 
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql連線失敗!"))
 		return
 	}
 
-	var tx *sqlx.Tx
-
 	tx, err = conn.Beginx()
 
-	if err != nil{
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql交易啟動失敗!"))
 		return
 	}
 
-	_, err = tx.Exec("UPDATE menu SET Menu_Name=?, Price=?, OnWork=? WHERE Menu_ID=?",data.Menu_Name,data.Price,data.OnWork,data.Menu_ID)
+	_, err = tx.Exec("UPDATE menu SET Menu_Name=?, Price=?, OnWork=? WHERE Menu_ID=?", data.Menu_Name, data.Price, data.OnWork, data.Menu_ID)
 
 	if err != nil {
 		tx.Rollback()
@@ -146,8 +135,8 @@ func EditMenu(rw http.ResponseWriter, request *http.Request){
 
 }
 
-func DeleteMenu(rw http.ResponseWriter, request *http.Request){
-	data :=&Menu{}
+func DeleteMenu(rw http.ResponseWriter, request *http.Request) {
+	data := &model.Menu{}
 
 	decoder := json.NewDecoder(request.Body)
 
@@ -160,27 +149,25 @@ func DeleteMenu(rw http.ResponseWriter, request *http.Request){
 
 	check := GetSingleMenu(data.Menu_ID)
 
-	if check == false{
+	if check == false {
 		rw.Write([]byte("錯誤! 資料庫內無對應菜單!"))
 		return
 	}
 
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql連線失敗!"))
 		return
 	}
 
-	var tx *sqlx.Tx
-
 	tx, err = conn.Beginx()
 
-	if err != nil{
+	if err != nil {
 		rw.Write([]byte("錯誤! mysql交易啟動失敗!"))
 		return
 	}
 
-	_, err = tx.Exec("DELETE FROM menu WHERE Menu_ID=?",data.Menu_ID)
+	_, err = tx.Exec("DELETE FROM menu WHERE Menu_ID=?", data.Menu_ID)
 
 	if err != nil {
 		tx.Rollback()
@@ -202,32 +189,32 @@ func DeleteMenu(rw http.ResponseWriter, request *http.Request){
 }
 
 func GetMenuNewPK() int {
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		log.Fatalln(err)
 	}
 	defer conn.Close()
 	result := 0
-	err = conn.Get(&result,"select (MAX(Menu_ID)+1) from menu")
-	if err != nil{
+	err = conn.Get(&result, "select (MAX(Menu_ID)+1) from menu")
+	if err != nil {
 	}
 	return result
 }
 
-func GetSingleMenu(pk int)bool{
-	conn, err:= sqlx.Connect("mysql","sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
-	if err != nil{
+func GetSingleMenu(pk int) bool {
+	conn, err := sqlx.Connect("mysql", "sa:qwer!1234@tcp(127.0.0.1:3306)/orderservice")
+	if err != nil {
 		return false
 	}
 
 	defer conn.Close()
 
-	result := Menu{}
+	result := model.Menu{}
 
-	err = conn.Get(&result,"SELECT * FROM menu where Menu_ID=? ",pk)
+	err = conn.Get(&result, "SELECT * FROM menu where Menu_ID=? ", pk)
 
-	if err != nil{
-		
+	if err != nil {
+
 		fmt.Println(err)
 
 		return false
@@ -236,15 +223,22 @@ func GetSingleMenu(pk int)bool{
 	return true
 }
 
-
 func main() {
 
+	log.Println("db Init Strat")
+	if err := dbInit(); err != nil {
+		log.Fatal(err)
+	}
 	r := mux.NewRouter()
-
 	r.HandleFunc("/", MenuPage).Methods("GET")
-	r.HandleFunc("/AddMenu",AddMenu).Methods("POST")
-	r.HandleFunc("/EditMenu",EditMenu).Methods("PUT")
-	r.HandleFunc("/DeleteMenu",DeleteMenu).Methods("DELETE")
+	r.HandleFunc("/AddMenu", AddMenu).Methods("POST")
+	r.HandleFunc("/EditMenu", EditMenu).Methods("PUT")
+	r.HandleFunc("/DeleteMenu", DeleteMenu).Methods("DELETE")
 	http.ListenAndServe(":3000", r)
-	
+
+}
+
+func dbInit() error {
+
+	return nil
 }
