@@ -6,3 +6,4 @@ type Menu struct {
 	Price     int    `db:"Price"`
 	OnWork    string `db:"OnWork"`
 }
+
